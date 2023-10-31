@@ -1,0 +1,85 @@
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.util.Base64;
+import java.util.Random;
+import java.util.Scanner;
+
+import javax.crypto.Cipher;
+
+public class Trabajador {
+    public static void main(String[] args) throws Exception {
+        Scanner scanner = new Scanner(System.in);
+        try {
+
+            // DATOS DEL TRABAJADOR
+            System.out.print("Nombre completo del trabajador: ");
+            String nombreCompleto = scanner.nextLine();
+            System.out.print("Documento de identidad: ");
+            String documentoIdentidad = scanner.nextLine();
+            System.out.print("Correo electrónico: ");
+            String correo = scanner.nextLine();
+            System.out.print("Número de teléfono: ");
+            String telefono = scanner.nextLine();
+
+            // ENCRIPTAR LOS DATOS CON EL ALGORITMO RSA (usando un cifrado asimetrico)
+            String datos = nombreCompleto + ";" + documentoIdentidad + ";" + correo + ";" + telefono;
+            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+            keyPairGenerator.initialize(2048);
+            KeyPair keyPair = keyPairGenerator.generateKeyPair();
+            PublicKey publicKey = keyPair.getPublic();
+            String encryptedData = RSAUtil.encrypt(datos, publicKey);
+        
+            // MOSTRAR EL CODIGO GENERADO (LA PARTE DONDE SE GENERA EL CODIGO ESTA EN LO ULTIMO)
+            String code = generateEightDigitCode();
+            System.out.println("Código de acceso: " + code);
+
+             //Voy a simular el almacenamiento del codigo y los datos como si fuera en una base de datos pero lo hare en variables como ejemplo para que corra el codigo
+
+            String storedCode = code;
+            String storedEncryptedData = encryptedData;
+
+            // PRUEBA
+            System.out.print("Ingrese el código de 8 dígitos para ver la información del trabajador: ");
+            String userInputCode = scanner.nextLine();
+
+            // VERIFICACION PARA MOSTRAR LOS DATOS
+            if (userInputCode.equals(storedCode)) {
+                
+                PrivateKey privateKey = keyPair.getPrivate();
+                String decryptedData = RSAUtil.decrypt(storedEncryptedData, privateKey);
+                System.out.println("Información del trabajador: " + decryptedData);
+            } else {
+                System.out.println("Código incorrecto. Acceso denegado.");
+            }
+        } finally {
+            scanner.close();
+        }
+    }
+
+    // ENCRIPTAR DATOS
+    private static class RSAUtil {
+        public static String encrypt(String data, PublicKey publicKey) throws Exception {
+            Cipher cipher = Cipher.getInstance("RSA");
+            cipher.init(Cipher.ENCRYPT_MODE, publicKey);
+            byte[] encryptedBytes = cipher.doFinal(data.getBytes());
+            return Base64.getEncoder().encodeToString(encryptedBytes);
+        }
+
+        public static String decrypt(String encryptedData, PrivateKey privateKey) throws Exception {
+            byte[] encryptedBytes = Base64.getDecoder().decode(encryptedData);
+            Cipher cipher = Cipher.getInstance("RSA");
+            cipher.init(Cipher.DECRYPT_MODE, privateKey);
+            byte[] decryptedBytes = cipher.doFinal(encryptedBytes);
+            return new String(decryptedBytes);
+        }
+    }
+
+    // ACA SE GENERA EL CODIGO ALEATORIO DE 8 DIGITOS
+    private static String generateEightDigitCode() {
+        Random random = new Random();
+        int code = random.nextInt(90000000) + 10000000; // Rango de 10000000 a 99999999
+        return String.valueOf(code);
+    }
+}
